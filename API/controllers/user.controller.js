@@ -5,7 +5,7 @@
 
 var bcrypt = require('bcrypt');        // Librería para convertir contraseña en texto cifrado
 var User = require('../models/user');  // Importa el esquema de usuario de MongoDB
-
+var jwt = require('../services/jwt.service'); // Importa el servicio JWT
 /*
  * Función para la página principal
  * Cuando alguien accede a la ruta principal, devuelve un mensaje de bienvenida
@@ -29,9 +29,9 @@ function test(req, res) {
 }
 
 /*
- ***********************************************************
+ ********************************************************************
  * [SAVEUSER] FUNCION PARA REGISTRAR NUEVOS USUARIOS EN LA RED SOCIAL
- ***********************************************************
+ ********************************************************************
  * Códigos de estado que puede devolver:
  * - 200: Todo OK, usuario creado
  * - 400: Error en los datos (campos faltantes o email inválido)
@@ -96,6 +96,50 @@ async function saveUser(req, res){     // async = función que puede esperar por
     }
 }
 
+async function loginUser(req, res){
+    try{
+        const params = req.body;
+        const email = params.email;
+        const password = params.password;
+
+        // Verificamos si ya existe un usuario con el mismo email
+        // usando findOne de MongoDB que busca un solo documento que coincida
+        const user = await User.findOne({email: params.email.toLowerCase()});
+
+        // Si existe el usuario, continuamos con la verificación de la contraseña
+        if(user){
+            // Comparamos la contraseña ingresada con la contraseña cifrada     
+            bcrypt.compare(password, user.password, (err, check) => {
+                // Si la contraseña coincide, generamos un token
+                if(check){
+                    // Si el usuario quiere un token, generamos uno
+                    if(params.gettoken){
+                        // Generamos un token para el usuario
+                        return res.status(200).send({
+                            // Devolvemos el token
+                            token: jwt.createToken(user)
+                        });
+
+                    }else{
+                        // Si la contraseña coincide, devolvemos un mensaje de éxito
+                        user.password = undefined;
+                        return res.status(200).send({message: "Login correcto",user: user});
+                    }                  
+                }else{
+                    // Si la contraseña no coincide, devolvemos un mensaje de error
+                    return res.status(404).send({message: "El usuario no se ha podido identificar"});
+                }
+            });
+        }else{
+            // Si no existe el usuario, devolvemos un mensaje de error
+            return res.status(404).send({message: "El usuario no se ha podido identificar!!"});
+        }
+        
+    } catch(err) {
+        return res.status(500).send({message: "Error al iniciar sesión",error: err.message});
+    }
+}
+
 /*
  * Exportamos todas las funciones del controlador
  * para poder usarlas en las rutas de la aplicación
@@ -103,5 +147,6 @@ async function saveUser(req, res){     // async = función que puede esperar por
 module.exports = {                    // Exporta las funciones para que otros archivos las usen
     home,
     test,
-    saveUser
+    saveUser,
+    loginUser
 };
