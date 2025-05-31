@@ -22,7 +22,7 @@ function home(req, res) {
  * Esta ruta sirve para verificar que la API está respondiendo correctamente
  * y que las rutas están bien configuradas
  */
-function test(req, res) {
+function pruebas(req, res) {
     res.status(200).send({            // Devuelve código 200 = todo OK
         message: "TEST Bienvenido al API REST de la Red Social"
     });
@@ -104,7 +104,7 @@ async function loginUser(req, res){
 
         // Verificamos si ya existe un usuario con el mismo email
         // usando findOne de MongoDB que busca un solo documento que coincida
-        const user = await User.findOne({email: params.email.toLowerCase()});
+        const user = await User.findOne({email: params.email});
 
         // Si existe el usuario, continuamos con la verificación de la contraseña
         if(user){
@@ -146,7 +146,7 @@ async function loginUser(req, res){
  */
 module.exports = {                    // Exporta las funciones para que otros archivos las usen
     home,
-    test,
+    pruebas,
     saveUser,
     loginUser
 };
