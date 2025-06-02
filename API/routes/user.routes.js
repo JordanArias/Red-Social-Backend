@@ -65,7 +65,21 @@ api.post('/login', UserController.loginUser);
 // Si el token no es válido o no existe, retorna un error
 api.get('/user/:id', md_auth.ensureAuth, UserController.getUser);
 
+// Ruta GET /users/:page
+// Uso: Hacer una petición GET a http://tudominio/api/users/:page
+// Requiere: Token JWT válido en el header 'Authorization'
+// El middleware md_auth.ensureAuth verificará el token antes de permitir el acceso
+// Si el token es válido, ejecuta UserController.getUsers
+// Si el token no es válido o no existe, retorna un error
+api.get('/users/:page?', md_auth.ensureAuth, UserController.getUsers);
 
+// Ruta PUT /user/:id
+// Uso: Hacer una petición PUT a http://tudominio/api/user/:id
+// Requiere: Token JWT válido en el header 'Authorization'
+// El middleware md_auth.ensureAuth verificará el token antes de permitir el acceso
+// Si el token es válido, ejecuta UserController.updateUser
+// Si el token no es válido o no existe, retorna un error
+api.put('/update-user/:id', md_auth.ensureAuth, UserController.updateUser);
 
 // Exportamos el router para que pueda ser usado en app.js o index.js
 // Esto permite que todas estas rutas sean accesibles bajo un prefijo común (ejemplo: /api)
