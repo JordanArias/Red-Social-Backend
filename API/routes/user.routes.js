@@ -57,6 +57,16 @@ api.post('/register', UserController.saveUser);
 // Si son incorrectas, devuelve un error
 api.post('/login', UserController.loginUser);
 
+// Ruta GET /user/:id
+// Uso: Hacer una petición GET a http://tudominio/api/user/:id
+// Requiere: Token JWT válido en el header 'Authorization'
+// El middleware md_auth.ensureAuth verificará el token antes de permitir el acceso
+// Si el token es válido, ejecuta UserController.getUser
+// Si el token no es válido o no existe, retorna un error
+api.get('/user/:id', md_auth.ensureAuth, UserController.getUser);
+
+
+
 // Exportamos el router para que pueda ser usado en app.js o index.js
 // Esto permite que todas estas rutas sean accesibles bajo un prefijo común (ejemplo: /api)
 module.exports = api;

@@ -3,25 +3,36 @@
  */
 'use strict'
 
+/*
+ * Códigos de estado que puede devolver:
+ * - 200: Todo OK, usuario creado
+ * - 400: Error en los datos (campos faltantes o email inválido)
+ * - 404: No se pudo registrar el usuario
+ * - 500: Error del servidor
+ */
+
+// Importamos las librerías necesarias
 var bcrypt = require('bcrypt');        // Librería para convertir contraseña en texto cifrado
 var User = require('../models/user');  // Importa el esquema de usuario de MongoDB
 var jwt = require('../services/jwt.service'); // Importa el servicio JWT
-/*
- * Función para la página principal
- * Cuando alguien accede a la ruta principal, devuelve un mensaje de bienvenida
- * para confirmar que la API está funcionando
- */
+
+
+/* 
+********************************************************************
+* [HOME] METODOS DE PRUEBA
+********************************************************************
+*/ 
 function home(req, res) {
     res.status(200).send({            // Devuelve código 200 = todo OK
         message: "HOME Bienvenido al API REST de la Red Social"
     });
 }
 
-/*
- * Función de prueba
- * Esta ruta sirve para verificar que la API está respondiendo correctamente
- * y que las rutas están bien configuradas
- */
+/* 
+********************************************************************
+* [PRUEBAS] METODOS DE PRUEBA
+********************************************************************
+*/ 
 function pruebas(req, res) {
     res.status(200).send({            // Devuelve código 200 = todo OK
         message: "TEST Bienvenido al API REST de la Red Social"
@@ -32,11 +43,6 @@ function pruebas(req, res) {
  ********************************************************************
  * [SAVEUSER] FUNCION PARA REGISTRAR NUEVOS USUARIOS EN LA RED SOCIAL
  ********************************************************************
- * Códigos de estado que puede devolver:
- * - 200: Todo OK, usuario creado
- * - 400: Error en los datos (campos faltantes o email inválido)
- * - 404: No se pudo registrar el usuario
- * - 500: Error del servidor
  */
 async function saveUser(req, res){     // async = función que puede esperar por operaciones
     try {                             // try-catch = maneja errores si algo falla
@@ -96,6 +102,11 @@ async function saveUser(req, res){     // async = función que puede esperar por
     }
 }
 
+/*
+ ********************************************************************
+ * [LOGINUSER] FUNCION PARA INICIAR SESION EN LA RED SOCIAL
+ ********************************************************************
+*/
 async function loginUser(req, res){
     try{
         const params = req.body;
@@ -141,6 +152,25 @@ async function loginUser(req, res){
 }
 
 /*
+ ********************************************************************
+ * [GETUSER] FUNCION PARA OBTENER UN USUARIO POR SU ID
+ ********************************************************************
+*/
+async function getUser(req, res){
+    try{
+        const userId = req.params.id;
+        const user = await User.findById(userId);
+        if(!user){
+            return res.status(404).send({message: "El usuario no se ha podido identificar"});
+        }
+        return res.status(200).send({user: user});
+    }catch(err){
+        return res.status(500).send({message: "Error al obtener el usuario",error: err.message});
+    }
+}
+
+
+/*
  * Exportamos todas las funciones del controlador
  * para poder usarlas en las rutas de la aplicación
  */
@@ -148,5 +178,6 @@ module.exports = {                    // Exporta las funciones para que otros ar
     home,
     pruebas,
     saveUser,
-    loginUser
+    loginUser,
+    getUser
 };
