@@ -14,9 +14,11 @@ app.use(bodyParser.json());
 
 //cargar rutas
 var user_routes = require('./routes/user.routes');
+var follow_routes = require('./routes/follow.routes');
 
 //rutas
 app.use('/api', user_routes);
+app.use('/api', follow_routes);
 
 app.get('/pruebas', (req, res) => {
     res.status(200).send({

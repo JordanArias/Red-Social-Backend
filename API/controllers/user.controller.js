@@ -468,10 +468,9 @@ async function uploadImage(req, res){
 }
 
 /*
- ********************************************************************
+ ************************************************************************
  * [GETIMAGEFILE] FUNCIÓN PARA OBTENER LA IMAGEN DE PERFIL DE UN USUARIO
- ********************************************************************
-
+ ************************************************************************
  */
 async function getImageFile(req, res){
 
@@ -521,8 +520,12 @@ async function getImageFile(req, res){
     }
 }
 
+
+
 /*
- * Exportamos todas las funciones del controlador
+ ********************************************************************
+ * [EXPORT] EXPORTAMOS TODAS LAS FUNCIONES DEL CONTROLADOR
+ ********************************************************************
  * para poder usarlas en las rutas de la aplicación
  */
 module.exports = {      // Exporta las funciones para que otros archivos las usen

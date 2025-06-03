@@ -17,6 +17,13 @@ var md_auth = require('../middlewares/authenticated.middleware');
 // El router nos permite agrupar rutas y sus manejadores en un solo objeto
 var api = express.Router();
 
+
+/*
+-----------------------------------------------------------------------
+RUTAS DE USUARIOS
+-----------------------------------------------------------------------
+*/
+
 /*
  ====== DEFINICIÓN DE RUTAS ======
  Cada ruta se define con los siguientes componentes:
@@ -95,6 +102,13 @@ api.post('/upload-image-user/:id', md_auth.ensureAuth, UserController.uploadImag
 // Sirve para obtener una imagen de perfil de un usuario
 api.get('/get-image-user/:imageFile', UserController.getImageFile);
 
+
+
+/*
+-----------------------------------------------------------------------
+EXPORTACIÓN DEL ROUTER
+-----------------------------------------------------------------------
+*/
 // Exportamos el router para que pueda ser usado en app.js o index.js
 // Esto permite que todas estas rutas sean accesibles bajo un prefijo común (ejemplo: /api)
 module.exports = api;
