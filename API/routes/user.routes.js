@@ -89,6 +89,12 @@ api.put('/update-user/:id', md_auth.ensureAuth, UserController.updateUser);
 // Si el token no es válido o no existe, retorna un error
 api.post('/upload-image-user/:id', md_auth.ensureAuth, UserController.uploadImage);
 
+// Ruta GET /get-image-user/:imageFile
+// Uso: Hacer una petición GET a http://tudominio/api/get-image-user/:imageFile
+// No requiere autenticación ni parámetros
+// Sirve para obtener una imagen de perfil de un usuario
+api.get('/get-image-user/:imageFile', UserController.getImageFile);
+
 // Exportamos el router para que pueda ser usado en app.js o index.js
 // Esto permite que todas estas rutas sean accesibles bajo un prefijo común (ejemplo: /api)
 module.exports = api;

@@ -327,39 +327,40 @@ async function updateUser(req, res){
 /*
  ********************************************************************
  * [UPLOADIMAGE] FUNCIÓN PARA SUBIR IMAGEN DE PERFIL DE USUARIO
- * 
- * DESCRIPCIÓN:
- * Esta función maneja la subida de imágenes de perfil para los usuarios.
- * Permite a los usuarios subir una imagen, la procesa, valida y almacena
- * en el servidor, actualizando la referencia en la base de datos.
- * 
- * PARÁMETROS DE ENTRADA:
- * - req.params.id: ID del usuario que quiere subir la imagen
- * - req.files: Archivo de imagen enviado en la petición
- * - req.user.sub: ID del usuario autenticado (viene del middleware de auth)
- * 
- * PROCESO:
- * 1. Verifica permisos del usuario
- * 2. Configura formidable para la subida
- * 3. Procesa y valida la imagen
- * 4. Guarda la imagen y actualiza el usuario
- * 
- * RESPUESTAS HTTP:
- * - 200: Imagen subida correctamente
- * - 400: Error en el archivo o formato
- * - 403: Sin permisos para esta acción
- * - 404: Usuario no encontrado
- * - 500: Error interno del servidor
- * 
- * EJEMPLO DE USO (Postman):
- * POST /api/upload-image/123
- * Headers: 
- *   - Authorization: token_jwt
- * Body (form-data):
- *   - image: [archivo de imagen]
  ********************************************************************
 */
 async function uploadImage(req, res){
+   /*
+    * DESCRIPCIÓN:
+    * Esta función maneja la subida de imágenes de perfil para los usuarios.
+    * Permite a los usuarios subir una imagen, la procesa, valida y almacena
+    * en el servidor, actualizando la referencia en la base de datos.
+    * 
+    * PARÁMETROS DE ENTRADA:
+    * - req.params.id: ID del usuario que quiere subir la imagen
+    * - req.files: Archivo de imagen enviado en la petición
+    * - req.user.sub: ID del usuario autenticado (viene del middleware de auth)
+    * 
+    * PROCESO:
+    * 1. Verifica permisos del usuario
+    * 2. Configura formidable para la subida
+    * 3. Procesa y valida la imagen
+    * 4. Guarda la imagen y actualiza el usuario
+    * 
+    * RESPUESTAS HTTP:
+    * - 200: Imagen subida correctamente
+    * - 400: Error en el archivo o formato
+    * - 403: Sin permisos para esta acción
+    * - 404: Usuario no encontrado
+    * - 500: Error interno del servidor
+    * 
+    * EJEMPLO DE USO (Postman):
+    * POST /api/upload-image/123
+    * Headers: 
+    *   - Authorization: token_jwt
+    * Body (form-data):
+    *   - image: [archivo de imagen]
+   */
     try{
         // 1. VALIDACIÓN DE PERMISOS
         // Extraemos el ID del usuario de los parámetros de la URL
@@ -467,10 +468,64 @@ async function uploadImage(req, res){
 }
 
 /*
+ ********************************************************************
+ * [GETIMAGEFILE] FUNCIÓN PARA OBTENER LA IMAGEN DE PERFIL DE UN USUARIO
+ ********************************************************************
+
+ */
+async function getImageFile(req, res){
+
+   /*
+    * DESCRIPCIÓN:
+    * Esta función se encarga de servir las imágenes de perfil de los usuarios
+    * almacenadas en el servidor. Busca la imagen solicitada en el directorio
+    * de uploads y la envía como respuesta si existe.
+    * 
+    * PARÁMETROS DE ENTRADA:
+    * - req.params.imageFile: Nombre del archivo de imagen a buscar
+    * 
+    * RESPUESTAS HTTP:
+    * - 200: Devuelve la imagen solicitada
+    * - 404: La imagen no existe en el servidor
+    * - 500: Error interno del servidor
+    * 
+    * EJEMPLO DE USO:
+    * GET /api/get-image-user/usuario123.jpg
+    */
+    try{
+        // Obtenemos el nombre del archivo de imagen desde los parámetros de la URL
+        const imageFile = req.params.imageFile;
+
+        // Construimos la ruta absoluta al archivo usando path.resolve
+        // Esto nos asegura que la ruta sea correcta independientemente del sistema operativo
+        const pathFile = path.resolve('./uploads/users/', imageFile);
+
+        // Verificamos si el archivo existe de manera síncrona
+        if(fs.existsSync(pathFile)){
+            // Si el archivo existe, lo enviamos como respuesta
+            // res.sendFile se encarga de establecer los headers correctos automáticamente
+            return res.sendFile(pathFile);
+        } else {
+            // Si el archivo no existe, enviamos un error 404
+            return res.status(404).send({
+                message: "La imagen no existe"
+            });
+        }
+    }catch(err){
+        // Si ocurre cualquier error durante el proceso
+        // enviamos un error 500 (Error del servidor)
+        return res.status(500).send({
+            message: "Error al obtener la imagen",
+            error: err.message
+        });
+    }
+}
+
+/*
  * Exportamos todas las funciones del controlador
  * para poder usarlas en las rutas de la aplicación
  */
-module.exports = {                    // Exporta las funciones para que otros archivos las usen
+module.exports = {      // Exporta las funciones para que otros archivos las usen
     home,
     pruebas,
     saveUser,
@@ -478,5 +533,6 @@ module.exports = {                    // Exporta las funciones para que otros ar
     getUser,
     getUsers,
     updateUser,
-    uploadImage
+    uploadImage,
+    getImageFile
 };
