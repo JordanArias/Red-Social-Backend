@@ -15,6 +15,9 @@
 var bcrypt = require('bcrypt');        // Librería para convertir contraseña en texto cifrado
 var User = require('../models/user');  // Importa el esquema de usuario de MongoDB
 var jwt = require('../services/jwt.service'); // Importa el servicio JWT
+const formidable = require('formidable');  // Importa formidable correctamente
+var fs = require('fs');                // Para manejo de archivos
+var path = require('path');            // Para manejo de rutas
 
 /* 
 ********************************************************************
@@ -239,20 +242,21 @@ async function getUsers(req, res){
 /*
  ********************************************************************
  * [UPDATEUSER] FUNCION PARA ACTUALIZAR UN USUARIO POR SU ID
- * 
- * Esta función permite actualizar los datos de un usuario.
- * Solo permite actualizar:
- * - nombre
- * - apellido
- * - nick (verificando que no exista)
- * - email (verificando que no exista)
- * 
- * No permite actualizar:
- * - password (tiene su propia función)
- * - role (por seguridad)
  ********************************************************************
 */
 async function updateUser(req, res){
+    /*
+      * Esta función permite actualizar los datos de un usuario.
+        * Solo permite actualizar:
+        * - nombre
+        * - apellido
+        * - nick (verificando que no exista)
+        * - email (verificando que no exista)
+        * 
+        * No permite actualizar:
+        * - password (tiene su propia función)
+        * - role (por seguridad)
+    */
     console.log("updateUser");
     try{
         const userId = req.params.id;
@@ -321,6 +325,148 @@ async function updateUser(req, res){
 }
 
 /*
+ ********************************************************************
+ * [UPLOADIMAGE] FUNCIÓN PARA SUBIR IMAGEN DE PERFIL DE USUARIO
+ * 
+ * DESCRIPCIÓN:
+ * Esta función maneja la subida de imágenes de perfil para los usuarios.
+ * Permite a los usuarios subir una imagen, la procesa, valida y almacena
+ * en el servidor, actualizando la referencia en la base de datos.
+ * 
+ * PARÁMETROS DE ENTRADA:
+ * - req.params.id: ID del usuario que quiere subir la imagen
+ * - req.files: Archivo de imagen enviado en la petición
+ * - req.user.sub: ID del usuario autenticado (viene del middleware de auth)
+ * 
+ * PROCESO:
+ * 1. Verifica permisos del usuario
+ * 2. Configura formidable para la subida
+ * 3. Procesa y valida la imagen
+ * 4. Guarda la imagen y actualiza el usuario
+ * 
+ * RESPUESTAS HTTP:
+ * - 200: Imagen subida correctamente
+ * - 400: Error en el archivo o formato
+ * - 403: Sin permisos para esta acción
+ * - 404: Usuario no encontrado
+ * - 500: Error interno del servidor
+ * 
+ * EJEMPLO DE USO (Postman):
+ * POST /api/upload-image/123
+ * Headers: 
+ *   - Authorization: token_jwt
+ * Body (form-data):
+ *   - image: [archivo de imagen]
+ ********************************************************************
+*/
+async function uploadImage(req, res){
+    try{
+        // 1. VALIDACIÓN DE PERMISOS
+        // Extraemos el ID del usuario de los parámetros de la URL
+        const userId = req.params.id;
+
+        // Verificamos que el usuario autenticado sea el mismo que quiere actualizar su imagen
+        // req.user.sub viene del middleware de autenticación
+        if(userId != req.user.sub){
+            return res.status(403).send({
+                message: "No tienes permisos para actualizar este usuario"
+            });
+        }
+
+        // 2. CONFIGURACIÓN DE FORMIDABLE
+        // Creamos una nueva instancia de formidable para procesar la subida de archivos
+        const form = new formidable.IncomingForm({
+            uploadDir: './uploads/users',    // Directorio donde se guardarán las imágenes
+            keepExtensions: true,            // Mantiene la extensión original del archivo (.jpg, .png, etc)
+            maxFileSize: 5 * 1024 * 1024,    // Tamaño máximo: 5MB (5 * 1024 * 1024 bytes)
+            filter: ({name, originalFilename, mimetype}) => {
+                // Función de filtrado: solo permite archivos que sean imágenes
+                // mimetype ejemplo: 'image/jpeg', 'image/png'
+                return mimetype && mimetype.includes("image");
+            }
+        });
+
+        // 3. PROCESAMIENTO DEL ARCHIVO(image) SUBIDO PIR EL USUARIO
+        // form.parse devuelve una promesa con [campos, archivos]
+        // fields: campos normales del formulario (no usados aquí)
+        // files: contiene los archivos subidos
+        const [fields, files] = await form.parse(req);
+
+        // Verificamos si se subió alguna imagen en el campo 'image'
+        if(!files.image || files.image.length === 0){
+            return res.status(400).send({
+                message: "No se ha subido ninguna imagen"
+            });
+        }
+
+        // 4. VALIDACIÓN DEL ARCHIVO
+        // Extraemos la información del archivo subido
+        const file = files.image[0];              // Tomamos el primer archivo del campo 'image'
+        const filePath = file.filepath;           // Ruta temporal donde formidable guardó el archivo
+        const fileExt = path.extname(file.originalFilename).toLowerCase();  // Extraemos la extensión del archivo
+
+        // Lista de extensiones permitidas
+        const validExtensions = ['.png', '.jpg', '.jpeg', '.gif'];
+        
+        // Validamos que la extensión sea permitida
+        if(!validExtensions.includes(fileExt)){
+            // Si la extensión no es válida:
+            fs.unlinkSync(filePath);              // 1. Eliminamos el archivo temporal
+            return res.status(400).send({         // 2. Devolvemos error
+                message: "Extensión no válida. Solo se permiten: " + validExtensions.join(', ')
+            });
+        }
+
+        // 5. GUARDADO DEL ARCHIVO
+        // Generamos un nombre único para el archivo
+        // Formato: idUsuario-timestamp.extension (ejemplo: 123-1634567890.jpg)
+        const finalFileName = `${userId}-${Date.now()}${fileExt}`;
+        const finalPath = path.join('./uploads/users', finalFileName); // Ruta final donde se guardará el archivo
+        
+        // Movemos el archivo de la ubicación temporal a la final
+        fs.renameSync(filePath, finalPath);
+
+        // 6. ACTUALIZACIÓN EN BASE DE DATOS
+        // Actualizamos el campo 'image' del usuario en MongoDB
+        const userUpdated = await User.findByIdAndUpdate(
+            userId,                     // ID del usuario a actualizar
+            { image: finalFileName },   // Nuevo valor para el campo 'image'
+            { new: true }              // Opción para devolver el documento actualizado
+        );
+
+        // Verificamos si se actualizó correctamente
+        if(!userUpdated){
+            return res.status(404).send({
+                message: "No se ha podido actualizar la imagen del usuario"
+            });
+        }
+
+        // 7. RESPUESTA EXITOSA
+        // Si todo salió bien, devolvemos la respuesta con los datos actualizados
+        return res.status(200).send({
+            message: "Imagen subida correctamente",
+            user: userUpdated,
+            image: finalFileName
+        });
+
+    }catch(err){
+        // 8. MANEJO DE ERRORES
+        // Error específico: archivo demasiado grande
+        if(err.message.includes('maxFileSize')){
+            return res.status(400).send({
+                message: "El archivo es demasiado grande. Máximo 5MB"
+            });
+        }
+
+        // Cualquier otro error
+        return res.status(500).send({
+            message: "Error al subir la imagen",
+            error: err.message
+        });
+    }
+}
+
+/*
  * Exportamos todas las funciones del controlador
  * para poder usarlas en las rutas de la aplicación
  */
@@ -331,5 +477,6 @@ module.exports = {                    // Exporta las funciones para que otros ar
     loginUser,
     getUser,
     getUsers,
-    updateUser
+    updateUser,
+    uploadImage
 };

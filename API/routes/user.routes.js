@@ -81,6 +81,14 @@ api.get('/users/:page?', md_auth.ensureAuth, UserController.getUsers);
 // Si el token no es válido o no existe, retorna un error
 api.put('/update-user/:id', md_auth.ensureAuth, UserController.updateUser);
 
+// Ruta PUT /upload-image-user/:id
+// Uso: Hacer una petición PUT a http://tudominio/api/upload-image-user/:id
+// Requiere: Token JWT válido en el header 'Authorization'
+// El middleware md_auth.ensureAuth verificará el token antes de permitir el acceso
+// Si el token es válido, ejecuta UserController.uploadImage
+// Si el token no es válido o no existe, retorna un error
+api.post('/upload-image-user/:id', md_auth.ensureAuth, UserController.uploadImage);
+
 // Exportamos el router para que pueda ser usado en app.js o index.js
 // Esto permite que todas estas rutas sean accesibles bajo un prefijo común (ejemplo: /api)
 module.exports = api;
