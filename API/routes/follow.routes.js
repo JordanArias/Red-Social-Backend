@@ -19,6 +19,15 @@ RUTAS DE FOLLOW
 // RUTA PARA GUARDAR UN FOLLOW
 api.post('/follow', md_auth.ensureAuth, FollowController.saveFollow);
 
-// Exportamos el router para que pueda ser usado en app.js o index.js
-module.exports = api;
+// RUTA PARA ELIMINAR UN FOLLOW
+api.delete('/follow/:id', md_auth.ensureAuth, FollowController.deleteFollow);
+
+
+
+/*
+---------------------------------------------------------
+EXPORTAMOS EL ROUTER
+---------------------------------------------------------
+*/
+module.exports = api; // Exportamos el router para que pueda ser usado en app.js o index.js
 
