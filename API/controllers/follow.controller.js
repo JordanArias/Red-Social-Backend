@@ -14,9 +14,9 @@ var Follow = require('../models/follow'); // Importa el modelo de seguimiento
 */
 
 /*
-********************************************************************
+***************************************************************************
 * [SAVEFOLLOW] FUNCIÓN PARA GUARDAR UN FOLLOW
-********************************************************************
+***************************************************************************
 */
 async function saveFollow(req, res){
     /*
@@ -74,6 +74,11 @@ async function saveFollow(req, res){
     }
 }
 
+/*
+***************************************************************************
+* [DELETEFOLLOW] FUNCIÓN PARA ELIMINAR UN FOLLOW
+***************************************************************************
+*/
 async function deleteFollow(req, res){
     //Función para eliminar una relación de seguimiento entre usuarios
 
@@ -106,6 +111,92 @@ async function deleteFollow(req, res){
 }
 
 /*
+***************************************************************************
+* [GETFOLLOWINGUSERS] FUNCIÓN PARA OBTENER LOS USUARIOS QUE SIGUE UN USUARIO
+***************************************************************************
+* Esta función obtiene la lista de usuarios que sigue un usuario específico,
+* con soporte para paginación y datos detallados de cada usuario seguido.
+* 
+* Parámetros URL opcionales:
+* - id: ID del usuario del que queremos obtener sus seguidos
+* - page: Número de página que queremos obtener
+* - itemsPerPage: Cantidad de elementos por página
+*
+* Respuesta:
+* - followingUsers: Array con los usuarios seguidos y sus datos
+* - total: Número total de usuarios seguidos
+* - pages: Número total de páginas
+* - page: Página actual
+* - items_per_page: Elementos por página
+*/
+async function getFollowingUsers(req, res){
+    try {
+        var userId = req.user.sub; // Obtiene el ID del usuario autenticado por defecto
+
+        // Si se proporciona un ID en la URL, sobrescribe el ID del usuario autenticado
+        // Esto permite ver los seguidos de cualquier usuario, no solo del autenticado
+        // Si se proporciona un ID y una página, sobrescribe el ID del usuario autenticado y la página
+        if(req.params.id && req.params.page){
+            userId = req.params.id;
+        }
+
+        // Inicializa la página en 1 por defecto
+        var page = 1;
+
+        // Si se especifica una página en la URL, la convierte a número entero
+        // parseInt asegura que el valor sea un número y no un string
+        if(req.params.page){
+            page = parseInt(req.params.page); 
+        }
+
+        // Define el número de elementos por página (4 por defecto)
+        var itemsPerPage = 1;
+
+        // Si se especifica una cantidad de elementos por página en la URL, la convierte a número
+        if(req.params.itemsPerPage){
+            itemsPerPage = parseInt(req.params.itemsPerPage);
+        }
+
+        // Cuenta el número total de usuarios que sigue
+        // countDocuments() es un método de Mongoose que cuenta documentos que coinciden con el criterio
+        const total = await Follow.countDocuments({user: userId});
+
+        // Verifica si el usuario no sigue a nadie
+        if(total === 0) {
+            return res.status(404).send({
+                message: "El usuario no está siguiendo a ninguna persona",
+                total: 0,
+                pages: 0,
+                page: 1,
+                items_per_page: itemsPerPage
+            });
+        }
+        
+        // Busca los usuarios seguidos con las siguientes operaciones:
+        const followingUsers = await Follow.find({user: userId})  // Busca todos los follows donde el usuario es el seguidor
+            .populate('followed', 'name surname image nick email')  // Rellena los datos del usuario seguido (solo los campos especificados)
+            .skip((page - 1) * itemsPerPage)  // Salta los documentos de páginas anteriores
+            .limit(itemsPerPage);  // Limita el número de resultados por página
+
+        // Envía la respuesta con todos los datos necesarios para la paginación
+        return res.status(200).send({
+            followingUsers,        // Lista de usuarios seguidos
+            total,                 // Número total de follows
+            pages: Math.ceil(total/itemsPerPage),  // Calcula el número total de páginas redondeando hacia arriba
+            page: page,            // Página actual
+            items_per_page: itemsPerPage  // Elementos por página configurados
+        });
+    } catch (error) {
+        // Si ocurre algún error, envía un mensaje de error con los detalles
+        return res.status(500).send({
+            message: "Error en la prueba de controlador de Follow",
+            error: error.message
+        });
+    }
+}
+
+
+/*
  ********************************************************************
  * [EXPORT] EXPORTAMOS TODAS LAS FUNCIONES DEL CONTROLADOR
  ********************************************************************
@@ -113,7 +204,8 @@ async function deleteFollow(req, res){
  */
 module.exports = {
     saveFollow,
-    deleteFollow
+    deleteFollow,
+    getFollowingUsers
 }
 
 

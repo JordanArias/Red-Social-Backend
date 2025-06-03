@@ -22,7 +22,8 @@ api.post('/follow', md_auth.ensureAuth, FollowController.saveFollow);
 // RUTA PARA ELIMINAR UN FOLLOW
 api.delete('/follow/:id', md_auth.ensureAuth, FollowController.deleteFollow);
 
-
+// RUTA PARA OBTENER LOS USUARIOS QUE SIGUE UN USUARIO
+api.get('/following/:id?/:page?', md_auth.ensureAuth, FollowController.getFollowingUsers);
 
 /*
 ---------------------------------------------------------
