@@ -281,6 +281,45 @@ async function followUsersIds(user_id) {
 }
 
 
+async function getCounters(req, res) {
+    try {
+        let userId = req.user.sub;
+        if(req.params.id){
+            userId = req.params.id;
+        }
+
+        // Llamar a getCountFollow para obtener los contadores
+        const counts = await getCountFollow(userId);
+
+        return res.status(200).send(counts); // Devuelve los contadores
+
+    } catch (err) {
+        return res.status(500).send({
+            message: "Error al obtener los contadores",
+            error: err.message
+        });
+    }
+}
+
+async function getCountFollow(user_id) {
+    try {
+        const following = await Follow.countDocuments({"user": user_id}); // Cuenta los usuarios que sigue
+        const followed = await Follow.countDocuments({"followed": user_id}); // Cuenta los usuarios que le siguen
+
+        return {
+            following: following, // Devuelve el número de usuarios que sigue
+            followed: followed // Devuelve el número de usuarios que le siguen
+        };
+    } catch (err) {
+        // Manejo de errores en caso de que ocurra un problema con la consulta
+        return {
+            message: "Error al obtener el número de seguidos",
+            error: err.message // Devuelve el mensaje de error
+        };
+    }
+}
+
+
 /*
  ********************************************************************
  * [UPDATEUSER] FUNCION PARA ACTUALIZAR UN USUARIO POR SU ID
@@ -577,6 +616,7 @@ module.exports = {      // Exporta las funciones para que otros archivos las use
     loginUser,
     getUser,
     getUsers,
+    getCounters,
     updateUser,
     uploadImage,
     getImageFile

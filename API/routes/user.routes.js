@@ -80,6 +80,14 @@ api.get('/user/:id', md_auth.ensureAuth, UserController.getUser);
 // Si el token no es válido o no existe, retorna un error
 api.get('/users/:page?', md_auth.ensureAuth, UserController.getUsers);
 
+// Ruta GET /counters/:id
+// Uso: Hacer una petición GET a http://tudominio/api/counters/:id
+// Requiere: Token JWT válido en el header 'Authorization'
+// El middleware md_auth.ensureAuth verificará el token antes de permitir el acceso
+// Si el token es válido, ejecuta UserController.getCounters
+// Si el token no es válido o no existe, retorna un error
+api.get('/counters/:id?', md_auth.ensureAuth, UserController.getCounters);
+
 // Ruta PUT /user/:id
 // Uso: Hacer una petición PUT a http://tudominio/api/user/:id
 // Requiere: Token JWT válido en el header 'Authorization'
