@@ -27,6 +27,13 @@ api.get('/following/:id?/:page?', md_auth.ensureAuth, FollowController.getFollow
 
 // RUTA PARA OBTENER LOS SEGUIDORES DE UN USUARIO
 api.get('/followed/:id?/:page?', md_auth.ensureAuth, FollowController.getFollowedUsers);
+
+// RUTA PARA OBTENER LOS USUARIOS QUE SIGO O ME SIGUEN
+api.get('/get-my-follows/:followed?', md_auth.ensureAuth, FollowController.getMyFollows);
+
+
+
+
 /*
 ---------------------------------------------------------
 EXPORTAMOS EL ROUTER

@@ -269,6 +269,68 @@ async function getFollowedUsers(req, res){
 }
 
 /*
+***************************************************************************
+* [GETMYFOLLOWS] FUNCIÓN PARA OBTENER LOS USUARIOS QUE SIGO O ME SIGUEN
+***************************************************************************
+*/
+async function getMyFollows(req, res){
+    /*
+    * Esta función obtiene la lista de usuarios que siges o que te siguen,
+    * dependiendo del parámetro opcional 'followed' en la URL.
+    * 
+    * Parámetros URL opcionales:
+    * - followed: ID del usuario del que queremos obtener sus seguidos
+    */
+    try {
+        // Obtiene el ID del usuario que está logueado
+        var userId = req.user.sub;
+
+        // Variable para guardar la búsqueda
+        var follows;
+
+        // Si nos envían el parámetro followed en la URL
+        if(req.params.followed){
+            // Busca los usuarios que me siguen
+            follows = await Follow.find({followed: userId})
+                // Rellena los datos de los usuarios que me siguen
+                .populate('user', 'name surname image nick email');
+
+            if(!follows || follows.length === 0){
+                return res.status(404).send({
+                    message: "No te sigue ningún usuario",
+                    follows: []
+                });
+            }
+        } else {
+            // Si no hay parámetro followed, busca los usuarios que yo sigo
+            follows = await Follow.find({user: userId})
+                // Rellena los datos de los usuarios que sigo
+                .populate('followed', 'name surname image nick email');
+
+            if(!follows || follows.length === 0){
+                return res.status(404).send({
+                    message: "No sigues a ningún usuario",
+                    follows: []
+                });
+            }
+        }
+
+        // Devuelve el resultado según el tipo de búsqueda
+        return res.status(200).send({
+            message: req.params.followed ? "Lista de usuarios que te siguen" : "Lista de usuarios que sigues",
+            follows: follows
+        });
+
+    } catch (error) {
+        // Si hay algún error, devuelve el mensaje de error
+        return res.status(500).send({
+            message: "Error al obtener la lista de usuarios",
+            error: error.message
+        });
+    }
+}
+
+/*
  ********************************************************************
  * [EXPORT] EXPORTAMOS TODAS LAS FUNCIONES DEL CONTROLADOR
  ********************************************************************
@@ -278,7 +340,8 @@ module.exports = {
     saveFollow,
     deleteFollow,
     getFollowingUsers,
-    getFollowedUsers
+    getFollowedUsers,
+    getMyFollows
 }
 
 
