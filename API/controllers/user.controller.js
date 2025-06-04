@@ -18,6 +18,8 @@ var jwt = require('../services/jwt.service'); // Importa el servicio JWT
 const formidable = require('formidable');  // Importa formidable correctamente
 var fs = require('fs');                // Para manejo de archivos
 var path = require('path');            // Para manejo de rutas
+var Follow = require('../models/follow'); // Importa el esquema de seguidos de MongoDB
+
 
 /* 
 ********************************************************************
@@ -165,11 +167,43 @@ async function getUser(req, res){
         if(!user){
             return res.status(404).send({message: "El usuario no se ha podido identificar"});
         }
-        return res.status(200).send({user: user});
+
+        // Llamamos a la función para verificar si el usuario logueado sigue a este usuario
+        const following = await followThisUser(req.user.sub, userId);
+
+        // Devuelve el usuario y los objetos de follow completos
+        return res.status(200).send({
+            user,           // Datos del usuario
+            following: following.follow,    // Objeto completo de si yo lo sigo
+            followed: following.followed    // Objeto completo de si él me sigue
+        });
+
     }catch(err){
         return res.status(500).send({message: "Error al obtener el usuario",error: err.message});
     }
 }
+
+/*
+ * [FOLLOWTHISUSER] FUNCION PARA VER SI EL USUARIO LOGUEADO SIGUE A ESTE USUARIO O SI SIGUE A EL USUARIO LOGUEADO
+ */
+async function followThisUser(identity_user_id, user_id){
+        // Busca si el usuario logueado sigue a este usuario
+        const follow = await Follow.findOne({
+            "user": identity_user_id,     // ID del usuario logueado
+            "followed": user_id        // ID del usuario que estamos viendo
+        });
+        // Busca si el usuario nos sigue a nosotros
+        const followed = await Follow.findOne({
+            "user": user_id,     // ID del usuario que estamos viendo
+            "followed": identity_user_id        // ID del usuario logueado
+        });
+
+        return{
+            "follow": follow,
+            "followed": followed
+        }
+}
+
 
 /*
  ********************************************************************
