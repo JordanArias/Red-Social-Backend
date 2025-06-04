@@ -213,65 +213,73 @@ async function followThisUser(identity_user_id, user_id){
 async function getUsers(req, res){
     try{
         // Extraemos el ID del usuario que está haciendo la petición
-        // Este valor viene del middleware de autenticación (req.user.sub)
-        const identity = req.user.sub;
+        const identity_user_id = req.user.sub;
 
         // Configuramos la página que queremos ver
-        // Por defecto será la página 1 si no se especifica otra
         var page = 1;
-        
-        // Si en la URL viene un parámetro 'page', lo usamos
-        // Ejemplo: /api/users/2 <- mostraría la página 2
         if(req.params.page){
-            // Convertimos el parámetro a número ya que viene como string
             page = parseInt(req.params.page);
         }
 
-        // Definimos cuántos usuarios queremos mostrar por página
-        // En este caso, 2 usuarios por página
-        var itemsPerPage = 2;
+        var itemsPerPage = 5;
 
-        // Consultamos a MongoDB cuántos usuarios hay en total
-        // countDocuments() cuenta todos los documentos en la colección User
-        const total = await User.countDocuments();
-        
-        // Calculamos cuántos documentos debemos saltar según la página
-        // Ejemplo: 
-        // - Página 1: skip = (1-1)*2 = 0 -> no salta ningún documento
-        // - Página 2: skip = (2-1)*2 = 2 -> salta los primeros 2 documentos
-        const skip = (page - 1) * itemsPerPage;
+        // Obtenemos los usuarios
+        const users = await User.find()
+            .sort('_id')
+            .skip((page - 1) * itemsPerPage)
+            .limit(itemsPerPage);
 
-        // Hacemos la consulta principal a la base de datos
-        const users = await User.find()        // Busca todos los usuarios
-            .sort('_id')                       // Los ordena por su ID
-            .skip(skip)                        // Salta los documentos según la página
-            .limit(itemsPerPage);              // Limita el resultado a 2 usuarios
-
-        // Verificamos si se encontraron usuarios
         if(!users){
-            // Si no hay usuarios, devolvemos un error 404 (No encontrado)
             return res.status(404).send({
-                message: "No hay usuarios para mostrar"
+                message: "No hay usuarios disponibles"
             });
         }
 
-        // Si todo salió bien, devolvemos la respuesta con:
+        // Llamamos a followUsersIds para obtener los IDs de los usuarios que sigue y los que le siguen
+        const follows = await followUsersIds(identity_user_id);
+
         return res.status(200).send({
-            users: users,                              // Lista de usuarios encontrados
-            total: total,                              // Total de usuarios en la BD
-            pages: Math.ceil(total/itemsPerPage),      // Calculamos el total de páginas
-            page: page                                 // Página actual que estamos viendo
+            users,
+            users_following: follows.following,    // IDs de usuarios que sigo
+            users_follow_me: follows.followed,     // IDs de usuarios que me siguen
+            total: await User.countDocuments(),
+            pages: Math.ceil(await User.countDocuments()/itemsPerPage)
         });
 
     }catch(err){
-        // Si ocurre cualquier error durante el proceso
-        // devolvemos un error 500 (Error del servidor)
         return res.status(500).send({
             message: "Error al obtener los usuarios",
-            error: err.message                         // Incluimos el mensaje de error específico
+            error: err.message
         });
     }
 }
+
+/*
+ * [FOLLOWUSERSIDS] FUNCIÓN PARA OBTENER LOS IDS DE USUARIOS QUE SIGUE Y LE SIGUEN
+ */
+async function followUsersIds(user_id) {
+    // Busca los usuarios que sigue
+    // Realiza una búsqueda en la colección Follow donde el campo "user" coincide con el user_id proporcionado.
+    const following = await Follow.find({"user": user_id}) 
+        .select('followed -_id'); // Solo selecciona el campo 'followed' y excluye el campo '_id' de los resultados.
+    console.log(following);
+    // Busca los usuarios que le siguen
+    // Realiza una búsqueda en la colección Follow donde el campo "followed" coincide con el user_id proporcionado.
+    const followed = await Follow.find({"followed": user_id})
+        .select('user -_id'); // Solo selecciona el campo 'user' y excluye el campo '_id' de los resultados.
+
+    // Procesa los arrays para obtener solo los IDs
+    // Mapea el array 'following' para crear un nuevo array que contenga solo los IDs de los usuarios que sigue.
+    let following_clean = following.map(follow => follow.followed);
+    // Mapea el array 'followed' para crear un nuevo array que contenga solo los IDs de los usuarios que le siguen.
+    let followed_clean = followed.map(follow => follow.user);
+
+    return {
+        following: following_clean, // Devuelve un objeto que contiene el array de IDs de usuarios que sigue.
+        followed: followed_clean // Devuelve un objeto que contiene el array de IDs de usuarios que le siguen.
+    }
+}
+
 
 /*
  ********************************************************************
