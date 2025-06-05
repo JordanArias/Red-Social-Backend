@@ -9,8 +9,12 @@ var md_auth = require('../middlewares/authenticated.middleware');
 // Importamos el controlador de seguimiento
 var PublicationController = require('../controllers/publication.controller');
 
+// Definimos las rutas de la publicación
+api.post('/publication', md_auth.ensureAuth, PublicationController.savePublication);
+api.get('/publications/:page?', md_auth.ensureAuth, PublicationController.getPublications);
 
-
+// Exportamos el router
+module.exports = api;
 
 
 
