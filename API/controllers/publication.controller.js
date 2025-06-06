@@ -103,6 +103,11 @@ async function getPublications(req, res) {
     }
 }
 
+/*
+ ********************************************************************
+ * [GETPUBLICATION] FUNCION PARA OBTENER UNA PUBLICACION
+ ********************************************************************
+*/
 async function getPublication(req, res){
     try{
         var publication_id = req.params.id;
@@ -120,10 +125,49 @@ async function getPublication(req, res){
     }
 }
 
+/*
+ ********************************************************************
+ * [DELETEPUBLICATION] FUNCION PARA ELIMINAR UNA PUBLICACION
+ ********************************************************************
+*/
+async function deletePublication(req, res) {
+    try {
+        // Obtenemos el ID de la publicación desde los parámetros de la solicitud
+        const publicationId = req.params.id;
+        // Obtenemos el ID del usuario que realiza la solicitud
+        const userId = req.user.sub;
+
+        // Buscamos la publicación por su ID
+        const publication = await Publication.findById(publicationId);
+
+        // Verificamos si la publicación existe
+        if (!publication) {
+            return res.status(404).send({ status: 'error', message: 'Publicación no encontrada' });
+        }
+
+        // Verificamos si el ID del usuario que realiza la solicitud coincide con el ID del usuario que creó la publicación
+        if (publication.user.toString() !== userId) {
+            return res.status(403).send({ status: 'error', message: 'No tienes permiso para eliminar esta publicación' });
+        }
+
+        // Si las verificaciones son exitosas, procedemos a eliminar la publicación
+        await Publication.findByIdAndDelete(publicationId);
+
+        // Respondemos con un mensaje de éxito
+        return res.status(200).send({ status: 'success', message: 'Publicación eliminada correctamente'});
+
+    } catch (err) {
+        // Si ocurre un error, lo registramos y respondemos con un error
+        console.log(err);
+        return res.status(500).send({ status: 'error', message: 'Error al eliminar la publicación' });
+    }
+}
+
 module.exports = {
     savePublication,
     getPublications,
-    getPublication
+    getPublication,
+    deletePublication
 }
 
 
