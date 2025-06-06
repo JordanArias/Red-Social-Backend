@@ -14,6 +14,7 @@ api.post('/publication', md_auth.ensureAuth, PublicationController.savePublicati
 api.get('/publications/:page?', md_auth.ensureAuth, PublicationController.getPublications);
 api.get('/publication/:id', md_auth.ensureAuth, PublicationController.getPublication);
 api.delete('/publication/:id', md_auth.ensureAuth, PublicationController.deletePublication);
+api.post('/upload-image-publication/:imageFile', md_auth.ensureAuth, PublicationController.uploadImageFile);
 
 // Exportamos el router
 module.exports = api;

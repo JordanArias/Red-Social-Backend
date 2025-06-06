@@ -468,7 +468,7 @@ async function uploadImage(req, res){
             }
         });
 
-        // 3. PROCESAMIENTO DEL ARCHIVO(image) SUBIDO PIR EL USUARIO
+        // 3. PROCESAMIENTO DEL ARCHIVO(image) SUBIDO POR EL USUARIO
         // form.parse devuelve una promesa con [campos, archivos]
         // fields: campos normales del formulario (no usados aquí)
         // files: contiene los archivos subidos

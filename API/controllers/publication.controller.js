@@ -2,6 +2,9 @@
 
 var path = require('path');
 var fs = require('fs');
+var formidable = require('formidable');
+var fs = require('fs');                // Para manejo de archivos
+var path = require('path');            // Para manejo de rutas
 var Publication = require('../models/publication');
 var User = require('../models/user');
 var Follow = require('../models/follow');
@@ -163,11 +166,129 @@ async function deletePublication(req, res) {
     }
 }
 
+/*
+ ********************************************************************
+ * [UPLOADIMAGEFILE] FUNCIÓN PARA SUBIR IMAGEN DE PERFIL DE USUARIO
+ ********************************************************************
+*/
+async function uploadImageFile(req, res){
+
+     try{
+         // 1. VALIDACIÓN DE PERMISOS
+         // Extraemos el ID de la publicación de los parámetros de la URL
+         const publicationId = req.params.imageFile;
+ 
+        // Verificamos que el usuario autenticado sea el mismo que quiere actualizar su imagen
+        // req.user.sub viene del middleware de autenticación
+        if(publicationId != req.user.sub){
+            return res.status(403).send({
+                message: "No tienes permisos para actualizar esta publicación"
+            });
+        }
+
+         // 2. CONFIGURACIÓN DE FORMIDABLE
+         // Creamos una nueva instancia de formidable para procesar la subida de archivos
+         const form = new formidable.IncomingForm({
+             uploadDir: './uploads/publications',    // Directorio donde se guardarán las imágenes
+             keepExtensions: true,            // Mantiene la extensión original del archivo (.jpg, .png, etc)
+             maxFileSize: 5 * 1024 * 1024,    // Tamaño máximo: 5MB (5 * 1024 * 1024 bytes)
+             filter: ({name, originalFilename, mimetype}) => {
+                 // Función de filtrado: solo permite archivos que sean imágenes
+                 // mimetype ejemplo: 'image/jpeg', 'image/png'
+                 return mimetype && mimetype.includes("image");
+             }
+         });
+ 
+         // 3. PROCESAMIENTO DEL ARCHIVO(image) SUBIDO PIR EL USUARIO
+         // form.parse devuelve una promesa con [campos, archivos]
+         // fields: campos normales del formulario (no usados aquí)
+         // files: contiene los archivos subidos
+         const [fields, files] = await form.parse(req);
+ 
+         console.log("ID de publicación:", publicationId);
+         console.log("Archivos recibidos:", files);
+ 
+         // Verificamos si se subió alguna imagen en el campo 'image'
+         if(!files.image || files.image.length === 0){
+             return res.status(400).send({
+                 message: "No se ha subido ninguna imagen"
+             });
+         }
+ 
+         // 4. VALIDACIÓN DEL ARCHIVO
+         // Extraemos la información del archivo subido
+         const file = files.image[0];              // Tomamos el primer archivo del campo 'image'
+         const filePath = file.filepath;           // Ruta temporal donde formidable guardó el archivo
+         const fileExt = path.extname(file.originalFilename).toLowerCase();  // Extraemos la extensión del archivo
+ 
+         // Lista de extensiones permitidas
+         const validExtensions = ['.png', '.jpg', '.jpeg', '.gif'];
+         
+         // Validamos que la extensión sea permitida
+         if(!validExtensions.includes(fileExt)){
+             // Si la extensión no es válida:
+             fs.unlinkSync(filePath);              // 1. Eliminamos el archivo temporal
+             return res.status(400).send({         // 2. Devolvemos error
+                 message: "Extensión no válida. Solo se permiten: " + validExtensions.join(', ')
+             });
+         }
+ 
+         // 5. GUARDADO DEL ARCHIVO
+         // Generamos un nombre único para el archivo
+         // Formato: idUsuario-timestamp.extension (ejemplo: 123-1634567890.jpg)
+         const finalFileName = `${publicationId}-${Date.now()}${fileExt}`;
+         const finalPath = path.join('./uploads/publications', finalFileName); // Ruta final donde se guardará el archivo
+         
+         // Movemos el archivo de la ubicación temporal a la final
+         fs.renameSync(filePath, finalPath);
+ 
+         // 6. ACTUALIZACIÓN EN BASE DE DATOS
+         // Actualizamos el campo 'image' del usuario en MongoDB
+         const publicationUpdated = await Publication.findByIdAndUpdate(
+             publicationId,                     // ID del usuario a actualizar
+             { file: finalFileName },   // Nuevo valor para el campo 'image'
+             { new: true }              // Opción para devolver el documento actualizado
+         );
+ 
+         // Verificamos si se actualizó correctamente
+         if(!publicationUpdated){
+             return res.status(404).send({
+                 message: "No se ha podido actualizar la imagen de la publicación"
+             });
+         }
+ 
+         // 7. RESPUESTA EXITOSA
+         // Si todo salió bien, devolvemos la respuesta con los datos actualizados
+         return res.status(200).send({
+             message: "Imagen subida correctamente",
+             publication: publicationUpdated,
+             file: finalFileName
+         });
+ 
+     }catch(err){
+         // 8. MANEJO DE ERRORES
+         // Error específico: archivo demasiado grande
+         if(err.message.includes('maxFileSize')){
+             return res.status(400).send({
+                 message: "El archivo es demasiado grande. Máximo 5MB"
+             });
+         }
+ 
+         // Cualquier otro error
+         return res.status(500).send({
+             message: "Error al subir la imagen",
+             error: err.message
+         });
+     }
+ }
+
+
 module.exports = {
     savePublication,
     getPublications,
     getPublication,
-    deletePublication
+    deletePublication,
+    uploadImageFile
 }
 
 
