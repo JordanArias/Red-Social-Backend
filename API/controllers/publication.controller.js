@@ -103,10 +103,27 @@ async function getPublications(req, res) {
     }
 }
 
+async function getPublication(req, res){
+    try{
+        var publication_id = req.params.id;
+        const publication = await Publication.findById(publication_id);
+
+        if(!publication){
+            return res.status(400).send({status: 'error',message: 'No se ha encontrado la publicación'});
+        }
+
+        return res.status(200).send({status: 'success',publication: publication});
+
+    }catch(err){
+        console.log(err);
+        return res.status(500).send({status: 'error',message: 'Error al obtener las publicaciones'});
+    }
+}
 
 module.exports = {
     savePublication,
-    getPublications
+    getPublications,
+    getPublication
 }
 
 

@@ -12,6 +12,7 @@ var PublicationController = require('../controllers/publication.controller');
 // Definimos las rutas de la publicación
 api.post('/publication', md_auth.ensureAuth, PublicationController.savePublication);
 api.get('/publications/:page?', md_auth.ensureAuth, PublicationController.getPublications);
+api.get('/publication/:id', md_auth.ensureAuth, PublicationController.getPublication);
 
 // Exportamos el router
 module.exports = api;
