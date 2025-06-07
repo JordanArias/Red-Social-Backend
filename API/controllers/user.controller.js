@@ -19,6 +19,7 @@ const formidable = require('formidable');  // Importa formidable correctamente
 var fs = require('fs');                // Para manejo de archivos
 var path = require('path');            // Para manejo de rutas
 var Follow = require('../models/follow'); // Importa el esquema de seguidos de MongoDB
+var Publication = require('../models/publication'); // Importa el esquema de publicaciones de MongoDB
 
 
 /* 
@@ -305,10 +306,12 @@ async function getCountFollow(user_id) {
     try {
         const following = await Follow.countDocuments({"user": user_id}); // Cuenta los usuarios que sigue
         const followed = await Follow.countDocuments({"followed": user_id}); // Cuenta los usuarios que le siguen
+        const publications = await Publication.countDocuments({"user": user_id}); // Cuenta las publicaciones del usuario
 
         return {
             following: following, // Devuelve el número de usuarios que sigue
-            followed: followed // Devuelve el número de usuarios que le siguen
+            followed: followed, // Devuelve el número de usuarios que le siguen
+            publications: publications // Devuelve el número de publicaciones del usuario
         };
     } catch (err) {
         // Manejo de errores en caso de que ocurra un problema con la consulta
