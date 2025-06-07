@@ -51,8 +51,52 @@ async function saveMessage(req, res){
     }
 }
 
+/*
+***************************************************************************
+* [GETRECEIVEDMESSAGES] FUNCIÓN PARA OBTENER LOS MENSAJES RECIBIDOS
+***************************************************************************
+*/
+async function getReceivedMessages(req, res){
+    try {
+        var userId = req.user.sub; // ID del usuario receptor
+        var page = 1; // Página actual
+        if(req.params.page){
+            page = parseInt(req.params.page);
+        }
+        
+        var itemsPerPage = 2; // Items por página
+        if(req.params.itemsPerPage){
+            itemsPerPage = parseInt(req.params.itemsPerPage);
+        }
+
+        // Buscamos los mensajes recibidos
+        var messages = await Message.find({receiver: userId})
+        .populate('emitter') // Populamos el campo emitter con el usuario emisor
+        .sort({created_at: -1}) // Ordenamos los mensajes por fecha de creación de forma descendente
+        .skip((page - 1) * itemsPerPage) // Saltamos los mensajes de las páginas anteriores
+        .limit(itemsPerPage); // Limitamos el número de mensajes por página
+
+        if(!messages){
+            return res.status(404).send({message: 'No hay mensajes recibidos'});
+        }
+
+        // Devolvemos los mensajes recibidos
+        return res.status(200).send({
+            total: await Message.countDocuments({receiver: userId}), // Total de mensajes recibidos
+            pages: Math.ceil(await Message.countDocuments({receiver: userId})/itemsPerPage), // Total de páginas
+            page: page, // Página actual
+            items_per_page: itemsPerPage, // Items por página
+            messages // Mensajes recibidos
+        });
+
+    } catch (error) {
+        return res.status(500).send({message: 'Error al obtener los mensajes recibidos'});
+    }
+}
+
 
 // Exportamos las funciones
 module.exports = {
-    saveMessage
+    saveMessage,
+    getReceivedMessages
 }

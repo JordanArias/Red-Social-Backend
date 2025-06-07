@@ -11,6 +11,7 @@ var MessageController = require('../controllers/message.controller');
 
 // Definimos las rutas
 api.post('/save-message', md_auth.ensureAuth, MessageController.saveMessage);
+api.get('/my-messages/:page?', md_auth.ensureAuth, MessageController.getReceivedMessages);
 
 // Exportamos el router
 module.exports = api;
