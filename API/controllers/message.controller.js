@@ -32,7 +32,7 @@ async function saveMessage(req, res){
         message.emitter = req.user.sub; // ID del usuario emisor
         message.receiver = params.receiver; // ID del usuario receptor
         message.text = params.text; // Texto del mensaje
-        message.viewed = 'N'; // Estado del mensaje (N = No leído, S = Leído)
+        message.viewed = 'false'; // Estado del mensaje (N = No leído, S = Leído)
         message.created_at = new Date(); // Fecha de creación del mensaje
 
         // Guardamos el mensaje
@@ -134,9 +134,37 @@ async function getEmmitedMessages(req, res){
     }
 }
 
+/*
+***************************************************************************
+* [GETUNREADMESSAGES] FUNCIÓN PARA OBTENER LOS MENSAJES NO LEÍDOS
+***************************************************************************
+*/
+async function getUnreadMessages(req, res){
+    try {
+        var userId = req.user.sub; // ID del usuario receptor
+
+        // Buscamos los mensajes no leídos
+        var messages = await Message.find({receiver: userId, viewed: 'false'}) //Buscar donde el userId logueado es el receptor y el estado del mensaje es 'false'
+
+        if(!messages){
+            return res.status(404).send({message: 'No hay mensajes no leídos'});
+        }
+
+        // Devolvemos los mensajes no leídos
+        return res.status(200).send({
+            unread: await Message.countDocuments({receiver: userId, viewed: 'false'}), // Total de mensajes no leídos
+            messages: messages // Mensajes no leídos
+        });
+
+    } catch (error) {
+        return res.status(500).send({message: 'Error al obtener los mensajes no leídos'});
+    }
+}
+
 // Exportamos las funciones
 module.exports = {
     saveMessage,
     getReceivedMessages,
-    getEmmitedMessages
+    getEmmitedMessages,
+    getUnreadMessages
 }
