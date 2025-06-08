@@ -70,8 +70,8 @@ async function getReceivedMessages(req, res){
         }
 
         // Buscamos los mensajes recibidos
-        var messages = await Message.find({receiver: userId})
-        .populate('emitter') // Populamos el campo emitter con el usuario emisor
+        var messages = await Message.find({receiver: userId}) //Buscar donde el userId logueado es el receptor
+        .populate('emitter', 'name surname image nick _id') // Populamos el campo emitter con el usuario emisor
         .sort({created_at: -1}) // Ordenamos los mensajes por fecha de creación de forma descendente
         .skip((page - 1) * itemsPerPage) // Saltamos los mensajes de las páginas anteriores
         .limit(itemsPerPage); // Limitamos el número de mensajes por página
@@ -94,9 +94,49 @@ async function getReceivedMessages(req, res){
     }
 }
 
+/*
+***************************************************************************
+* [GETEMMITEDMESSAGES] FUNCIÓN PARA OBTENER LOS MENSAJES EMITIDOS
+***************************************************************************
+*/
+async function getEmmitedMessages(req, res){
+    try {
+        var userId = req.user.sub; // ID del usuario emisor
+        var page = 1; // Página actual
+        if(req.params.page){
+            page = parseInt(req.params.page);
+        }
+
+        var itemsPerPage = 2; // Items por página
+
+        // Buscamos los mensajes emitidos
+        var messages = await Message.find({emitter: userId}) //Buscar donde el userId logueado es el emisor
+        .populate('emitter receiver', 'name surname image nick _id') // Populamos el campo receiver con el usuario receptor
+        .sort({created_at: -1}) // Ordenamos los mensajes por fecha de creación de forma descendente
+        .skip((page - 1) * itemsPerPage) // Saltamos los mensajes de las páginas anteriores
+        .limit(itemsPerPage); // Limitamos el número de mensajes por página
+
+        if(!messages){
+            return res.status(404).send({message: 'No hay mensajes emitidos'});
+        }
+
+        // Devolvemos los mensajes emitidos
+        return res.status(200).send({
+            total: await Message.countDocuments({emitter: userId}), // Total de mensajes emitidos
+            pages: Math.ceil(await Message.countDocuments({emitter: userId})/itemsPerPage), // Total de páginas
+            page: page, // Página actual
+            items_per_page: itemsPerPage, // Items por página
+            messages // Mensajes emitidos
+        });
+
+    } catch (error) {
+        return res.status(500).send({message: 'Error al obtener los mensajes emitidos'});
+    }
+}
 
 // Exportamos las funciones
 module.exports = {
     saveMessage,
-    getReceivedMessages
+    getReceivedMessages,
+    getEmmitedMessages
 }
