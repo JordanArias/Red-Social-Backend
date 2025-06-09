@@ -6,6 +6,7 @@ var fs = require('fs');
 var formidable = require('formidable');
 var fs = require('fs');                // Para manejo de archivos
 var path = require('path');            // Para manejo de rutas
+var mongoose = require('mongoose');
 
 // Importamos los modelos
 var Message = require('../models/message');
@@ -142,22 +143,53 @@ async function getEmmitedMessages(req, res){
 async function getUnreadMessages(req, res){
     try {
         var userId = req.user.sub; // ID del usuario receptor
+        var userObjectId = new mongoose.Types.ObjectId(userId); // Convertir a ObjectId
 
         // Buscamos los mensajes no leídos
-        var messages = await Message.find({receiver: userId, viewed: 'false'}) //Buscar donde el userId logueado es el receptor y el estado del mensaje es 'false'
+        var messages = await Message.find({receiver: userObjectId, viewed: 'false'});
 
-        if(!messages){
+        if(!messages || messages.length === 0){
             return res.status(404).send({message: 'No hay mensajes no leídos'});
         }
 
         // Devolvemos los mensajes no leídos
         return res.status(200).send({
-            unread: await Message.countDocuments({receiver: userId, viewed: 'false'}), // Total de mensajes no leídos
-            messages: messages // Mensajes no leídos
+            unread: await Message.countDocuments({receiver: userObjectId, viewed: 'false'}),
+            messages: messages
         });
 
     } catch (error) {
         return res.status(500).send({message: 'Error al obtener los mensajes no leídos'});
+    }
+}
+
+/*
+***************************************************************************
+* [SETREADMESSAGE] FUNCIÓN PARA MARCAR UN MENSAJE COMO LEÍDO
+***************************************************************************
+*/
+async function setReadMessage(req, res){
+    try {
+        var userId = req.user.sub; // ID del usuario logueado
+        
+        // Buscamos los mensajes no leídos
+        var messages = await Message.find({receiver: userId, viewed: 'false'});
+
+        if(!messages || messages.length === 0){
+            return res.status(404).send({message: 'No hay mensajes no leídos'});
+        }
+
+        // Marcamos todos los mensajes como leídos
+        await Message.updateMany(
+            { receiver: userId, viewed: 'false' },
+            { $set: { viewed: 'true' } }
+        );
+
+        // Devolvemos los mensajes marcados como leídos
+        return res.status(200).send({message: 'Mensajes marcados como leídos', messages: messages});
+
+    } catch (error) {
+        return res.status(500).send({message: 'Error al marcar los mensajes como leídos'});
     }
 }
 
@@ -166,5 +198,6 @@ module.exports = {
     saveMessage,
     getReceivedMessages,
     getEmmitedMessages,
-    getUnreadMessages
+    getUnreadMessages,
+    setReadMessage
 }
