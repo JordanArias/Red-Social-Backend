@@ -69,7 +69,7 @@ async function saveUser(req, res){     // async = función que puede esperar por
             // Si encontramos un usuario existente, detenemos el registro
             // y enviamos mensaje de que ya existe
             if(existingUser){
-                return res.status(200).send({
+                return res.status(404).send({
                     message: "El usuario que intenta registrar ya existe"
                 });
             }
