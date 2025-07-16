@@ -76,6 +76,8 @@ async function getPublications(req, res) {
             follow_clean.push(follow.followed); // Agregamos cada ID de usuario seguido al array 'follow_clean'.
         });
 
+        follow_clean.push(req.user.sub); //Agregamos tambien nuesto id para nuestrar publicaciones
+
         // SEGUNDO::: BUSCAMOS LAS PUBLICACIONES DE LOS USUARIOS QUE SEGUIMOS
         // Realizamos una consulta para encontrar las publicaciones de los usuarios que seguimos.
         const publications = await Publication.find({ user: { $in: follow_clean } })
