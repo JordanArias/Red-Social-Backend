@@ -52,7 +52,7 @@ async function getPublications(req, res) {
         // Inicializamos la variable 'page' para la paginación, comenzando en la página 1.
         var page = 1; 
         // Inicializamos 'itemsPerPage' para definir cuántas publicaciones se mostrarán por página.
-        var itemsPerPage = 2; 
+        var itemsPerPage = 3; 
 
         // Verificamos si se ha pasado un número de página en los parámetros de la solicitud.
         if (req.params.page) {
@@ -92,9 +92,10 @@ async function getPublications(req, res) {
 
         // Respondemos con un estado 200 y enviamos la información de las publicaciones.
         return res.status(200).send({
-            total_items: publications.length, // 'total_items' contiene el número total de publicaciones en la respuesta. 
-            pages: Math.ceil(publications.length / itemsPerPage), // 'pages' calcula el total de páginas basándose en el número de publicaciones y los elementos por página.
+            total_items: await Publication.countDocuments({ user: { $in: follow_clean } }), // 'total_items' contiene el número total de publicaciones en la respuesta. 
+            pages: Math.ceil(await Publication.countDocuments({ user: { $in: follow_clean } }) / itemsPerPage), // 'pages' calcula el total de páginas basándose en el número de publicaciones y los elementos por página.
             page: page, // 'page' indica la página actual solicitada.
+            itemsPerPage: itemsPerPage, // 'itemsPerPage' indica el numero de items a mostrar por pagina 
             publications: publications // 'publications' contiene las publicaciones obtenidas de la base de datos.
         });
 
