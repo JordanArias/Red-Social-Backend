@@ -152,7 +152,7 @@ async function getFollowingUsers(req, res){
         }
 
         // Define el número de elementos por página (4 por defecto)
-        var itemsPerPage = 1;
+        var itemsPerPage = 4;
 
         // Si se especifica una cantidad de elementos por página en la URL, la convierte a número
         if(req.params.itemsPerPage){
@@ -180,9 +180,14 @@ async function getFollowingUsers(req, res){
             .skip((page - 1) * itemsPerPage)  // Salta los documentos de páginas anteriores
             .limit(itemsPerPage);  // Limita el número de resultados por página
 
+        // Llamamos a followUsersIds para obtener los IDs de los usuarios que sigue y los que le siguen
+        const follows = await followUsersIds(userId);
+
         // Envía la respuesta con todos los datos necesarios para la paginación
         return res.status(200).send({
             followingUsers,        // Lista de usuarios seguidos
+            users_following: follows.following,    // IDs de usuarios que sigo
+            users_follow_me: follows.followed,     // IDs de usuarios que me siguen
             total,                 // Número total de follows
             pages: Math.ceil(total/itemsPerPage),  // Calcula el número total de páginas redondeando hacia arriba
             page: page,            // Página actual
@@ -194,6 +199,32 @@ async function getFollowingUsers(req, res){
             message: "Error en la prueba de controlador de Follow",
             error: error.message
         });
+    }
+}
+
+/*
+ * [FOLLOWUSERSIDS] FUNCIÓN PARA OBTENER LOS IDS DE USUARIOS QUE SIGUE Y LE SIGUEN
+ */
+async function followUsersIds(user_id) {
+    // Busca los usuarios que sigue
+    // Realiza una búsqueda en la colección Follow donde el campo "user" coincide con el user_id proporcionado.
+    const following = await Follow.find({"user": user_id}) 
+        .select('followed -_id'); // Solo selecciona el campo 'followed' y excluye el campo '_id' de los resultados.
+    console.log(following);
+    // Busca los usuarios que le siguen
+    // Realiza una búsqueda en la colección Follow donde el campo "followed" coincide con el user_id proporcionado.
+    const followed = await Follow.find({"followed": user_id})
+        .select('user -_id'); // Solo selecciona el campo 'user' y excluye el campo '_id' de los resultados.
+
+    // Procesa los arrays para obtener solo los IDs
+    // Mapea el array 'following' para crear un nuevo array que contenga solo los IDs de los usuarios que sigue.
+    let following_clean = following.map(follow => follow.followed);
+    // Mapea el array 'followed' para crear un nuevo array que contenga solo los IDs de los usuarios que le siguen.
+    let followed_clean = followed.map(follow => follow.user);
+
+    return {
+        following: following_clean, // Devuelve un objeto que contiene el array de IDs de usuarios que sigue.
+        followed: followed_clean // Devuelve un objeto que contiene el array de IDs de usuarios que le siguen.
     }
 }
 
@@ -329,6 +360,9 @@ async function getMyFollows(req, res){
         });
     }
 }
+
+
+
 
 /*
  ********************************************************************

@@ -111,6 +111,62 @@ async function getPublications(req, res) {
 
 /*
  ********************************************************************
+ * [GETPUBLICATIONS] FUNCION PARA OBTENER LAS PUBLICACIONES DE UN USUARIO
+ ********************************************************************
+*/
+async function getPublicationsUser(req, res) {
+    // Definimos la función como asíncrona para poder usar 'await' en las consultas a la base de datos.
+    try {
+        // Inicializamos la variable 'page' para la paginación, comenzando en la página 1.
+        var page = 1; 
+        // Inicializamos 'itemsPerPage' para definir cuántas publicaciones se mostrarán por página.
+        var itemsPerPage = 3; 
+
+        // Verificamos si se ha pasado un número de página en los parámetros de la solicitud.
+        if (req.params.page) {
+            // Si existe, convertimos el valor a un entero y lo asignamos a 'page'.
+            page = parseInt(req.params.page);
+        }
+
+        var user = req.user.sub;
+        if (req.params.user) {
+            user = req.params.user;
+        }
+
+
+        // SEGUNDO::: BUSCAMOS LAS PUBLICACIONES DE LOS USUARIOS QUE SEGUIMOS
+        // Realizamos una consulta para encontrar las publicaciones de los usuarios que seguimos.
+        const publications = await Publication.find({ user: user })
+            .sort({ created_at: -1 }) // Ordenamos las publicaciones por fecha de creación de forma descendente.
+            .skip((page - 1) * itemsPerPage) // Saltamos las publicaciones que ya hemos mostrado en páginas anteriores.
+            .limit(itemsPerPage) // Limitamos el número de publicaciones que se mostrarán en esta página.
+            .populate('user') // Incluimos la información completa del usuario que hizo la publicación.
+            .exec(); // Ejecutamos la consulta.
+
+        // Si no se encuentran publicaciones, respondemos con un error 400.
+        if (!publications) {
+            return res.status(400).send({ status: 'error', message: 'No hay publicaciones' });
+        }
+
+        // Respondemos con un estado 200 y enviamos la información de las publicaciones.
+        return res.status(200).send({
+            total_items: await Publication.countDocuments({ user: user }), // 'total_items' contiene el número total de publicaciones en la respuesta. 
+            pages: Math.ceil(await Publication.countDocuments({ user: user }) / itemsPerPage), // 'pages' calcula el total de páginas basándose en el número de publicaciones y los elementos por página.
+            page: page, // 'page' indica la página actual solicitada.
+            itemsPerPage: itemsPerPage, // 'itemsPerPage' indica el numero de items a mostrar por pagina 
+            publications: publications // 'publications' contiene las publicaciones obtenidas de la base de datos.
+        });
+
+    } catch (err) {
+        // Si ocurre un error en cualquier parte del bloque try, se captura aquí.
+        console.log(err); // Registramos el error en la consola para depuración.
+        // Respondemos con un estado 500 y un mensaje de error.
+        return res.status(500).send({ status: 'error', message: 'Error al obtener las publicaciones' });
+    }
+}
+
+/*
+ ********************************************************************
  * [GETPUBLICATION] FUNCION PARA OBTENER UNA PUBLICACION
  ********************************************************************
 */
@@ -183,11 +239,11 @@ async function uploadImageFile(req, res){
  
         // Verificamos que el usuario autenticado sea el mismo que quiere actualizar su imagen
         // req.user.sub viene del middleware de autenticación
-        if(publicationId != req.user.sub){
-            return res.status(403).send({
-                message: "No tienes permisos para actualizar esta publicación"
-            });
-        }
+        // if(publicationId != req.user.sub){
+        //     return res.status(403).send({
+        //         message: "No tienes permisos para actualizar esta publicación"
+        //     });
+        // }
 
          // 2. CONFIGURACIÓN DE FORMIDABLE
          // Creamos una nueva instancia de formidable para procesar la subida de archivos
@@ -285,13 +341,43 @@ async function uploadImageFile(req, res){
      }
  }
 
+async function getImageFile(req, res) {
+    try {
+        // Obtenemos el nombre del archivo de imagen desde los parámetros de la URL
+        const imagefile = req.params.imageFile;
+        
+        // Construimos la ruta absoluta al archivo usando path.resolve
+        // Esto nos asegura que la ruta sea correcta independientemente del sistema operativo
+        const pathFile = path.resolve('./uploads/publications/', imagefile);
+        // Verificamos si el archivo existe de manera síncrona
+        if(fs.existsSync(pathFile)){
+            // Si el archivo existe, lo enviamos como respuesta
+            // res.sendFile se encarga de establecer los headers correctos automáticamente
+            return res.sendFile(pathFile);
+        } else {
+            // Si el archivo no existe, enviamos un error 404
+            return res.status(404).send({
+                message: "La imagen no existe"
+            });
+        }
+    } catch (error) {
+        // Si ocurre cualquier error durante el proceso
+        // enviamos un error 500 (Error del servidor)
+        return res.status(500).send({
+            message: "Error al obtener la imagen",
+            error: err.message
+        });
+    }
+}
 
 module.exports = {
     savePublication,
     getPublications,
+    getPublicationsUser,
     getPublication,
     deletePublication,
-    uploadImageFile
+    uploadImageFile,
+    getImageFile
 }
 
 
