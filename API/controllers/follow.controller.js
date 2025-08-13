@@ -254,7 +254,7 @@ async function getFollowedUsers(req, res){
         }
 
         // Define el número de elementos por página (4 por defecto)
-        var itemsPerPage = 1;
+        var itemsPerPage = 4;
 
         // Si se especifica una cantidad de elementos por página en la URL, la convierte a número
         if(req.params.itemsPerPage){
@@ -282,9 +282,15 @@ async function getFollowedUsers(req, res){
             .skip((page - 1) * itemsPerPage)  // Salta los documentos de páginas anteriores
             .limit(itemsPerPage);  // Limita el número de resultados por página
 
+
+        // Llamamos a followUsersIds para obtener los IDs de los usuarios que sigue y los que le siguen
+        const follows = await followUsersIds(userId);
+  
         // Envía la respuesta con todos los datos necesarios para la paginación
         return res.status(200).send({
             followedUsers,        // Lista de seguidores
+            users_following: follows.following,    // IDs de usuarios que sigo
+            users_follow_me: follows.followed,     // IDs de usuarios que me siguen
             total,                 // Número total de seguidores
             pages: Math.ceil(total/itemsPerPage),  // Calcula el número total de páginas redondeando hacia arriba
             page: page,            // Página actual
