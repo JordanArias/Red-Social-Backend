@@ -32,7 +32,7 @@ var Schema = mongoose.Schema;
 var PublicationSchema = Schema({
     text: String,        // Texto de la publicación
     file: String,        // Archivo adjunto (imagen, video, etc)
-    created_at: String,  // Fecha de creación
+    created_at: Date,  // Fecha de creación
     user: { 
         type: Schema.ObjectId,  // Tipo especial para IDs de MongoDB
         ref: 'User'            // Referencia al modelo User
