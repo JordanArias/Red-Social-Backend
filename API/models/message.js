@@ -51,7 +51,7 @@ var Schema = mongoose.Schema;
 var MessageSchema = Schema({
     text: String,
     viewed: String,
-    created_at: String,
+    created_at: Date,
     emitter: { 
         type: Schema.ObjectId,    // ID del usuario que envía
         ref: 'User'              // Referencia al modelo User

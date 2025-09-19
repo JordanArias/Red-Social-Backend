@@ -209,6 +209,7 @@ async function followUsersIds(user_id) {
     // Busca los usuarios que sigue
     // Realiza una búsqueda en la colección Follow donde el campo "user" coincide con el user_id proporcionado.
     const following = await Follow.find({"user": user_id}) 
+    .populate('followed', 'name surname image nick email') // <-- Aquí se aplica el populate
         .select('followed -_id'); // Solo selecciona el campo 'followed' y excluye el campo '_id' de los resultados.
     console.log(following);
     // Busca los usuarios que le siguen
@@ -328,7 +329,7 @@ async function getMyFollows(req, res){
         // Si nos envían el parámetro followed en la URL
         if(req.params.followed){
             // Busca los usuarios que me siguen
-            follows = await Follow.find({followed: userId})
+            follows = await Follow.find({followed: userId}) // donde el valor del campo followed coincida exactamente con el valor de tu variable userId.
                 // Rellena los datos de los usuarios que me siguen
                 .populate('user', 'name surname image nick email');
 

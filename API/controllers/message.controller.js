@@ -65,7 +65,7 @@ async function getReceivedMessages(req, res){
             page = parseInt(req.params.page);
         }
         
-        var itemsPerPage = 2; // Items por página
+        var itemsPerPage = 6; // Items por página
         if(req.params.itemsPerPage){
             itemsPerPage = parseInt(req.params.itemsPerPage);
         }
@@ -108,7 +108,7 @@ async function getEmmitedMessages(req, res){
             page = parseInt(req.params.page);
         }
 
-        var itemsPerPage = 2; // Items por página
+        var itemsPerPage = 6; // Items por página
 
         // Buscamos los mensajes emitidos
         var messages = await Message.find({emitter: userId}) //Buscar donde el userId logueado es el emisor
